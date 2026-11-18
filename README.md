@@ -5,6 +5,8 @@
 
 Integration for Homeassistant to view and Control the go-eCharger for electric Vehicles via the local ip-interface via API Version 1. In newer chargers the V1 API has to be enabled via the App first.
 
+This project is to change from local polling to the MQTT interface of the V1 API.
+
 ## Features
 - attributes from charger available as sensors
 - switch to turn off/on charger
