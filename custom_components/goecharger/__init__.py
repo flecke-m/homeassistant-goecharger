@@ -47,6 +47,26 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
+async def _async_forward_setups(hass, entry, platforms):
+    """Forward the platforms, compatible with HA < 2023.9."""
+    if hasattr(entry, "async_forward_entry_setups"):
+        await entry.async_forward_entry_setups(hass, platforms)
+    else:
+        for platform in platforms:
+            await entry.async_forward_entry_setup(hass, platform)
+
+
+async def _async_unload_platforms(hass, entry, platforms):
+    """Unload the platforms, compatible with HA < 2023.9."""
+    if hasattr(entry, "async_unload_platforms"):
+        return await entry.async_unload_platforms(hass, platforms)
+    result = True
+    for platform in platforms:
+        result = (await entry.async_unload_platform(hass, platform)) and result
+    return result
+
+
 CONFIG_SCHEMA = vol.Schema(
     {
         DOMAIN: vol.Schema(
@@ -349,7 +369,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    await entry.async_forward_entry_setups(hass, [Platform.SENSOR, Platform.SWITCH])
+    await _async_forward_setups(hass, entry, [Platform.SENSOR, Platform.SWITCH])
     return True
 
 
@@ -363,7 +383,7 @@ async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
     """Unload a config entry: unsubscribe from MQTT and drop the charger."""
     _LOGGER.debug("Unloading config entry for %s", entry.title)
 
-    if not await entry.async_unload_platforms(hass, [Platform.SENSOR, Platform.SWITCH]):
+    if not await _async_unload_platforms(hass, entry, [Platform.SENSOR, Platform.SWITCH]):
         return False
 
     data = hass.data.get(DOMAIN) or {}
