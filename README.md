@@ -1,11 +1,15 @@
 # Home Assistant integration for the go-eCharger (WIP)
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
-[![Validate with hassfest](https://github.com/mpw96/homeassistant-goecharger/actions/workflows/hassfest.yaml/badge.svg?branch=main)](https://github.com/mpw96/homeassistant-goecharger/actions/workflows/hassfest.yaml)
+Integration for Homeassistant to view and Control the go-eCharger for electric
+Vehicles via the **MQTT interface of API Version 1** (no HTTP polling). In
+newer chargers the V1 API has to be enabled via the App first.
 
-Integration for Homeassistant to view and Control the go-eCharger for electric Vehicles via the local ip-interface via API Version 1. In newer chargers the V1 API has to be enabled via the App first.
-
-This project is to change from local polling to the MQTT interface of the V1 API.
+## How it works
+The charger (firmware >= 030) publishes its status object every 5 seconds to
+the MQTT topic `go-eCharger/{serial}/status`. This integration subscribes to
+that topic and pushes updates to the entities. Commands are published to
+`go-eCharger/{serial}/cmd/req` in the format `param=value`
+(e.g. `amp=16`, `amx=10`, `alw=1`, `ust=2`, `dwo=25`).
 
 ## Features
 - attributes from charger available as sensors
@@ -13,7 +17,7 @@ This project is to change from local polling to the MQTT interface of the V1 API
 - set charge limit in kWh (0.1 kWh steps)
 - set max current for charging in ampere (6-32A)
 - set absolute maximum current for charging (max can not be set higher than "absolute max")
-- no cloud connection needed to control the charger - only local ip-access needed.
+- no cloud connection needed to control the charger - only local MQTT-access needed.
 - correction factor for older devices which often present 5-10% lower voltage and therefore energy values
 
 # Warning: WIP - Breaking changes possible
@@ -23,7 +27,7 @@ This is the first version of the Integration so there are still breaking changes
 
 - clone this repository
 ```
-git clone https://github.com/cathiele/homeassistant-goecharger.git
+git clone https://github.com/flecke-m/homeassistant-goecharger.git
 ```
 - copy the content of the `custom_components`-Folder to the `custom_components` folder of your home-assistant installation
 
@@ -32,22 +36,25 @@ git clone https://github.com/cathiele/homeassistant-goecharger.git
 # cp -r custom_components/goecharger <your-ha-config-dir>/custom_components
 ```
 
-* setup your Charger in the `configuration.yaml` (for always connected chargers):
+- make sure the **MQTT** integration is set up in `configuration.yaml` and can reach
+  the broker the charger is configured with (the charger has to be configured
+  to point at that broker; see the go-eCharger app / API documentation).
+
+- (optional) setup your Chargers in the `configuration.yaml`:
 
 ```yaml
 goecharger:
   chargers:
     - name: charger1
-      host: <ip of your charger>
+      serial: "123456"
     - name: charger2
-      host: <ip or hostname of charger 2>
+      serial: "234567"
       correction_factor: factor for correction for total and session charged
 ```
 
-YAML chargers are automatically loaded through Home Assistant config entries so
-their sensors and switch appear on the charger device page. Keep the YAML
-configuration; changes are applied on restart. Existing charger names and entity
-IDs are preserved. Use a different name for each charger.
+or add them via **Settings → Devices & Services → Add Integration → go-eCharger**.
+You only need the (unique) name of the charger and its **6 digit serial number**
+(the same number that is used in the MQTT topic `go-eCharger/{serial}/status`).
 
 # Sample View
 ![screenshot of Home Assistant](doc/ha_entity_view.png)

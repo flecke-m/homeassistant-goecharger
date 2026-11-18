@@ -3,16 +3,19 @@
         "step": {
             "user": {
                 "title": "go-eCharger Setup",
-                "description": "If you need help with the configuration have a look here: https://github.com/cathiele/homeassistant-goecharger",
+                "description": "Add your go-eCharger. The serial number is the 6 digit number of the charger (it is part of the MQTT topic). If you need help with the configuration have a look here: https://github.com/flecke-m/homeassistant-goecharger",
                 "data": {
-                    "host": "Hostname or IP-Address in the local network",
                     "name": "unique name of the charger",
-                    "scan_interval": "Pollinterval in seconds",
+                    "serial": "6 digit serial number of the charger",
                     "correction_factor": "correction Factor for incorrect Voltage measurement"
                 }
             }
         },
         "abort": {
+            "already_configured": "Device is already configured"
+        },
+        "error": {
+            "invalid_serial": "Please enter the 6 digit serial number of the charger"
         }
     },
     "options": {
@@ -20,15 +23,18 @@
         "step": {
             "init": {
                 "title": "go-eCharger Configuration",
-                "description": "If you need help with the configuration have a look here: https://github.com/cathiele/homeassistant-goecharger",
+                "description": "If you need help with the configuration have a look here: https://github.com/flecke-m/homeassistant-goecharger",
                 "data": {
-                    "host": "Hostname or IP-Address in the local network",
-                    "scan_interval": "Pollinterval in seconds",
+                    "name": "unique name of the charger",
+                    "serial": "6 digit serial number of the charger",
                     "correction_factor": "correction Factor for incorrect Voltage measurement"
                 }
             }
         },
         "abort": {
+        },
+        "error": {
+            "invalid_serial": "Please enter the 6 digit serial number of the charger"
         }
     },
     "services": {

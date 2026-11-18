@@ -3,16 +3,19 @@
         "step": {
             "user": {
                 "title": "go-eCharger Setup",
-                "description": "Ein Liste möglicher Konfigurationsparameter findest du hier : https://github.com/cathiele/homeassistant-goecharger",
+                "description": "Füge deinen go-eCharger hinzu. Die Seriennummer ist die 6-stellige Nummer des Laders (sie ist Teil des MQTT-Themas). Eine Liste möglicher Konfigurationsparameter findest du hier: https://github.com/flecke-m/homeassistant-goecharger",
                 "data": {
-                    "host": "Hostname oder IP-Address im lokalen Netzwerk",
                     "name": "Im Homeassistant eindeutiger Name des Chargers",
-                    "scan_interval": "Abfrageintervall in Sekunden",
+                    "serial": "6-stellige Seriennummer des Laders",
                     "correction_factor": "Korrekturfaktor für ungenaue Spannungsmessung"
                 }
             }
         },
         "abort": {
+            "already_configured": "Gerät ist bereits konfiguriert"
+        },
+        "error": {
+            "invalid_serial": "Bitte gib die 6-stellige Seriennummer des Laders ein"
         }
     },
     "options": {
@@ -20,15 +23,18 @@
         "step": {
             "init": {
                 "title": "go-eCharger Konfiguration",
-                "description": "Ein Liste möglicher Konfigurationsparameter findest du hier : https://github.com/cathiele/homeassistant-goecharger",
+                "description": "Eine Liste möglicher Konfigurationsparameter findest du hier: https://github.com/flecke-m/homeassistant-goecharger",
                 "data": {
-                    "host": "Hostname oder IP-Address im lokalen Netzwerk",
-                    "scan_interval": "Abfrageintervall in Sekunden",
+                    "name": "Im Homeassistant eindeutiger Name des Chargers",
+                    "serial": "6-stellige Seriennummer des Laders",
                     "correction_factor": "Korrekturfaktor für ungenaue Spannungsmessung"
                 }
             }
         },
         "abort": {
+        },
+        "error": {
+            "invalid_serial": "Bitte gib die 6-stellige Seriennummer des Laders ein"
         }
     },
     "services": {

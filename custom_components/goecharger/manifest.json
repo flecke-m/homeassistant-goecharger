@@ -2,15 +2,14 @@
   "domain": "goecharger",
   "name": "go-eCharger",
   "codeowners": [
-    "@cathiele"
+    "@cathiele",
+    "@flecke-m"
   ],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/cathiele/homeassistant-goecharger",
-  "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/cathiele/homeassistant-goecharger/issues",
-  "requirements": [
-    "goecharger@git+https://github.com/mpw96/goecharger.git@0.1.1"
-  ],
-  "version": "0.27.3"
+  "documentation": "https://github.com/flecke-m/homeassistant-goecharger",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/flecke-m/homeassistant-goecharger/issues",
+  "requirements": [],
+  "version": "1.0.0"
 }

@@ -1,13 +1,13 @@
-"""Platform for go-eCharger switch integration."""
+"""Switch platform for the go-eCharger MQTT integration."""
+
 import logging
+
+from homeassistant import config_entries, core
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.const import CONF_HOST
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant import core, config_entries
 
-from goecharger import GoeCharger
-
-from .const import DOMAIN, CONF_CHARGERS, CONF_NAME, CHARGER_API
+from .base_entity import GoeChargerBaseEntity
+from .charger import ChargerData, async_publish_command
+from .const import CONF_NAME, CONF_SERIAL, DATA_CHARGERS, DOMAIN, PARAM_ALLOW_CHARGING
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,106 +17,37 @@ async def async_setup_entry(
     config_entry: config_entries.ConfigEntry,
     async_add_entities,
 ):
-    _LOGGER.debug("setup switch...")
-    _LOGGER.debug(repr(config_entry.as_dict()))
-    config = config_entry.as_dict()["data"]
-
-    chargerName = config[CONF_NAME]
-    host = config[CONF_HOST]
-    chargerApi = GoeCharger(host)
-
-    entities = []
-
-    attribute = "allow_charging"
-    entities.append(
-        GoeChargerSwitch(
-            hass.data[DOMAIN]["coordinator"],
-            hass,
-            chargerApi,
-            f"switch.goecharger_{chargerName}_{attribute}",
-            chargerName,
-            "Charging allowed",
-            attribute,
-        )
-    )
-
-    async_add_entities(entities)
+    """Set up the switch for one charger."""
+    _LOGGER.debug("Setting up switch for %s", config_entry.data[CONF_NAME])
+    charger = hass.data[DOMAIN][DATA_CHARGERS][config_entry.data[CONF_SERIAL]]
+    async_add_entities([GoeChargerSwitch(hass, charger)])
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up go-eCharger Switch platform."""
-    if discovery_info is None:
-        return
-    _LOGGER.debug("setup_platform")
+class GoeChargerSwitch(GoeChargerBaseEntity, SwitchEntity):
+    """Switch that allows or blocks charging (API parameter alw)."""
 
-    chargers = discovery_info[CONF_CHARGERS]
-    chargerApi = discovery_info[CHARGER_API]
-
-    entities = []
-
-    for charger in chargers:
-        chargerName = charger[0][CONF_NAME]
-
-        attribute = "allow_charging"
-        entities.append(
-            GoeChargerSwitch(
-                hass.data[DOMAIN]["coordinator"],
-                hass,
-                chargerApi[chargerName],
-                f"switch.goecharger_{chargerName}_{attribute}",
-                chargerName,
-                "Charging allowed",
-                attribute,
-            )
-        )
-    async_add_entities(entities)
-
-
-class GoeChargerSwitch(CoordinatorEntity, SwitchEntity):
-    def __init__(self, coordinator, hass, goeCharger, entity_id, chargerName, name, attribute):
-        """Initialize the go-eCharger switch."""
-        super().__init__(coordinator)
-        self.entity_id = entity_id
-        self._chargername = chargerName
-        self._name = name
-        self._attribute = attribute
-        self.hass = hass
-        self._goeCharger = goeCharger
-        self._state = None
+    def __init__(self, hass: core.HomeAssistant, charger: ChargerData) -> None:
+        super().__init__(charger)
+        self._hass = hass
+        self.entity_id = f"switch.goecharger_{charger.name}_allow_charging"
+        self._attr_name = charger.name
 
     @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                # Serial numbers are unique identifiers within a specific domain
-                (DOMAIN, self._chargername)
-            },
-            "name": self.name,
-            "manufacturer": "go-e",
-            "model": "HOME",
-        }
-
-    async def async_turn_on(self, **kwargs):
-        """Turn the entity on."""
-        await self.hass.async_add_executor_job(self._goeCharger.setAllowCharging, True)
-        await self.coordinator.async_request_refresh()
-
-    async def async_turn_off(self, **kwargs):
-        """Turn the entity off."""
-        await self.hass.async_add_executor_job(self._goeCharger.setAllowCharging, False)
-        await self.coordinator.async_request_refresh()
-
-    @property
-    def name(self):
-        """Return the name of the switch."""
-        return self._chargername
-
-    @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return the unique_id of the switch."""
-        return f"{self._chargername}_{self._attribute}"
+        return f"{self._charger.name}_allow_charging"
 
     @property
-    def is_on(self):
-        """Return the state of the switch."""
-        return True if self.coordinator.data[self._chargername][self._attribute] == "on" else False
+    def is_on(self) -> bool:
+        """Return True when charging is allowed (alw == 1)."""
+        return (self._charger.status or {}).get("allow_charging") == "on"
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Allow charging."""
+        _LOGGER.debug("Allowing charging on %s", self._charger.name)
+        await async_publish_command(self._hass, self._charger, PARAM_ALLOW_CHARGING, 1)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Block charging."""
+        _LOGGER.debug("Blocking charging on %s", self._charger.name)
+        await async_publish_command(self._hass, self._charger, PARAM_ALLOW_CHARGING, 0)
