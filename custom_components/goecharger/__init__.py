@@ -350,7 +350,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     await hass.config_entries.async_forward_entry_setups(
-        entry, [Platform.SENSOR, Platform.SWITCH]
+        entry, [Platform.SENSOR, Platform.SWITCH, Platform.NUMBER, Platform.SELECT]
     )
     return True
 
