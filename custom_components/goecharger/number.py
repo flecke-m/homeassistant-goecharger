@@ -27,8 +27,8 @@ class GoeChargerChargeLimitNumber(GoeChargerBaseEntity, NumberEntity):
     """Set the charge limit in kWh."""
 
     _attr_native_min_value = 0
-    _attr_native_max_value = 10
-    _attr_native_step = 0.1
+    _attr_native_max_value = 20
+    _attr_native_step = 0.5
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_mode = NumberMode.BOX
     _attr_icon = "mdi:battery-charging"
@@ -51,8 +51,8 @@ class GoeChargerChargeLimitNumber(GoeChargerBaseEntity, NumberEntity):
         return float(value) if value is not None else None
 
     async def async_set_native_value(self, value: float) -> None:
-        """Publish the charge limit in 0.1 kWh units."""
-        value = max(0.0, min(10.0, float(value)))
+        """Publish the charge limit in 0.1 kWh units (0.5 kWh UI steps)."""
+        value = max(0.0, min(20.0, float(value)))
         dwo = int(round(value * 10))
         _LOGGER.debug("Setting charge limit for %s to %.1f kWh", self._charger.name, value)
         await async_publish_command(self._hass, self._charger, PARAM_CHARGE_LIMIT, dwo)
