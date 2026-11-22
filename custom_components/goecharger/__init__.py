@@ -350,7 +350,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     await hass.config_entries.async_forward_entry_setups(
-        entry, [Platform.SENSOR, Platform.SWITCH]
+        entry, [Platform.SENSOR, Platform.SWITCH, Platform.NUMBER, Platform.SELECT]
     )
     return True
 
@@ -366,7 +366,7 @@ async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
     _LOGGER.debug("Unloading config entry for %s", entry.title)
 
     if not await hass.config_entries.async_unload_platforms(
-        entry, [Platform.SENSOR, Platform.SWITCH]
+        entry, [Platform.SENSOR, Platform.SWITCH, Platform.NUMBER, Platform.SELECT]
     ):
         return False
 
