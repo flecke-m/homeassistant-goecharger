@@ -366,7 +366,7 @@ async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
     _LOGGER.debug("Unloading config entry for %s", entry.title)
 
     if not await hass.config_entries.async_unload_platforms(
-        entry, [Platform.SENSOR, Platform.SWITCH]
+        entry, [Platform.SENSOR, Platform.SWITCH, Platform.NUMBER, Platform.SELECT]
     ):
         return False
 
