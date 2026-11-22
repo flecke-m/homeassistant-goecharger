@@ -1,168 +1,110 @@
-# Home Assistant integration for the go-eCharger (WIP)
+# Home Assistant integration for the go-eCharger
 
-Integration for Homeassistant to view and Control the go-eCharger for electric
-Vehicles via the **MQTT interface of API Version 1** (no HTTP polling). In
-newer chargers the V1 API has to be enabled via the App first.
-
-## How it works
-The charger (firmware >= 030) publishes its status object every 5 seconds to
-the MQTT topic `go-eCharger/{serial}/status`. This integration subscribes to
-that topic and pushes updates to the entities. Commands are published to
-`go-eCharger/{serial}/cmd/req` in the format `param=value`
-(e.g. `amp=16`, `amx=10`, `alw=1`, `ust=2`, `dwo=25`).
+A Home Assistant custom integration for monitoring and controlling go-eCharger devices through the **local MQTT interface of API Version 1**. The charger publishes its status and the integration sends commands over MQTT; no HTTP polling or cloud connection is used.
 
 ## Features
-- attributes from charger available as sensors
-- switch to turn off/on charger
-- set charge limit in kWh (0.1 kWh steps)
-- set max current for charging in ampere (6-32A)
-- set absolute maximum current for charging (max can not be set higher than "absolute max")
-- no cloud connection needed to control the charger - only local MQTT-access needed.
-- correction factor for older devices which often present 5-10% lower voltage and therefore energy values
 
-# Warning: WIP - Breaking changes possible
-This is the first version of the Integration so there are still breaking changes possible.
+- Charger status and electrical measurements as Home Assistant sensors
+- Switch to allow or block charging
+- Native number entity for the charge limit (kWh, 0.1 kWh steps)
+- Native select entity for maximum charging current: **6, 8, 10, 12, 14 or 16 A**
+- Existing services for setting the temporary current, absolute maximum current and cable lock mode
+- MQTT push updates; entities synchronize automatically with the charger's reported status
+- Optional correction factor for energy measurements
 
-# Installation
+## Installation
 
-- clone this repository
+### HACS
+
+1. Add this repository as a custom repository in HACS (Integration).
+2. Install **go-eCharger**.
+3. Restart Home Assistant.
+4. Make sure the **MQTT** integration is configured and connected to the broker used by the charger.
+5. Add the integration under **Settings → Devices & Services → Add Integration → go-eCharger**.
+
+### Manual installation
+
+1. Download or clone this repository.
+2. Copy `custom_components/goecharger` into the `custom_components` directory of your Home Assistant configuration.
+3. Restart Home Assistant.
+4. Make sure the MQTT integration is configured and connected.
+5. Add **go-eCharger** under **Settings → Devices & Services → Add Integration**.
+
+## Configure the charger
+
+Enable the MQTT API on the charger and configure it to connect to your MQTT broker. The integration listens for status messages on:
+
+```text
+go-eCharger/{serial}/status
 ```
-git clone https://github.com/flecke-m/homeassistant-goecharger.git
-```
-- copy the content of the `custom_components`-Folder to the `custom_components` folder of your home-assistant installation
 
-```
-# mkdir -p <your-ha-config-dir>/custom_components
-# cp -r custom_components/goecharger <your-ha-config-dir>/custom_components
+Commands are published to:
+
+```text
+go-eCharger/{serial}/cmd/req
 ```
 
-- make sure the **MQTT** integration is set up in `configuration.yaml` and can reach
-  the broker the charger is configured with (the charger has to be configured
-  to point at that broker; see the go-eCharger app / API documentation).
+The serial number is the charger's 6-digit serial number. The MQTT integration in Home Assistant must be connected to the same broker.
 
-- (optional) setup your Chargers in the `configuration.yaml`:
+Add the charger through the integration UI using its name and serial number. Multiple chargers can be added independently. The optional correction factor can be adjusted in the integration options.
+
+A YAML import is also supported for existing installations:
 
 ```yaml
 goecharger:
   chargers:
     - name: charger1
       serial: "123456"
-    - name: charger2
-      serial: "234567"
-      correction_factor: factor for correction for total and session charged
+      correction_factor: "1.0"
 ```
 
-or add them via **Settings → Devices & Services → Add Integration → go-eCharger**.
-You only need the (unique) name of the charger and its **6 digit serial number**
-(the same number that is used in the MQTT topic `go-eCharger/{serial}/status`).
+## Charge controls
 
-# Sample View
-![screenshot of Home Assistant](doc/ha_entity_view.png)
+The integration creates the following entities for each configured charger:
 
-# Example Config
+| Entity | Type | Description |
+| --- | --- | --- |
+| `number.goecharger_{name}_charge_limit` | Number | Charge limit in kWh, in 0.1 kWh increments (0 disables the limit) |
+| `select.goecharger_{name}_max_current` | Select | Maximum current: 6, 8, 10, 12, 14 or 16 A |
+| `sensor.goecharger_{name}_charge_limit` | Sensor | Read-only measurement of the charge limit reported by the charger |
+| `switch.goecharger_{name}_allow_charging` | Switch | Allow or block charging |
 
-## `configuration.yaml`
+Replace `{name}` with the charger name configured in the integration. The number and select entities publish changes directly over MQTT. Incoming charger status messages update their displayed values automatically; no separate `input_number`, `input_select` or automations are required.
 
-```yaml
-input_number:
-  goecharger_charge_limit:
-    name: Charge limit (kWh)
-    min: 0
-    max: 10
-    step: 1
+The 16 A maximum-current selection is intentionally limited to the supported values above. This does not change the separate absolute-current or temporary-current services.
 
-input_select:
-  goecharger_max_current:
-    name: Max current
-    options:
-      - 6
-      - 10
-      - 16
-      - 20
-      - 24
-      - 32
-```
+## Dashboard example
 
-## `automations.yaml`
-
-**Important: Replace `111111` with your chargers name.**
+Add the entities to an Entities card in a Lovelace dashboard (replace `mycharger` with your configured charger name):
 
 ```yaml
-- id: '1576914483212'
-  alias: 'goecharger: set max current on charger based on input select'
-  description: ''
-  trigger:
-  - entity_id: input_select.goecharger_max_current
-    platform: state
-  condition: []
-  action:
-  - data_template:
-      max_current: '{{ states(''input_select.goecharger_max_current'') }}'
-    service: goecharger.set_max_current
-- id: '1576915266692'
-  alias: 'goecharger: set max_current input_select based on charger value'
-  description: ''
-  trigger:
-  - entity_id: sensor.goecharger_111111_charger_max_current
-    platform: state
-  condition: []
-  action:
-  - data_template:
-      entity_id: input_select.goecharger_max_current
-      option: '{{ states.sensor.goecharger_111111_charger_max_current.state }}'
-    service: input_select.select_option
-- id: '1577036409850'
-  alias: 'goecharger: set charge limit based on input'
-  description: ''
-  trigger:
-  - entity_id: input_number.goecharger_charge_limit
-    platform: state
-  condition: []
-  action:
-  - data_template:
-      charge_limit: '{{ states(''input_number.goecharger_charge_limit'') }}'
-    service: goecharger.set_charge_limit
-- id: '1577036687192'
-  alias: 'goecharger: set charge_limit input based on charger'
-  description: ''
-  trigger:
-  - entity_id: sensor.goecharger_111111_charge_limit
-    platform: state
-  condition: []
-  action:
-  - data_template:
-      entity_id: input_number.goecharger_charge_limit
-      value: '{{ states.sensor.goecharger_111111_charge_limit.state }}'
-    service: input_number.set_value
-```
-
-## Lovcelace-UI Card Example
-
-**Important: Replace `111111` with your chargers name.**
-
-```yaml
-cards:
-entities:
-  - entity: switch.goecharger_111111_allow_charging
-  - entity: input_number.goecharger_charge_limit
-  - entity: input_select.goecharger_max_current
-  - entity: sensor.goecharger_111111_car_status
-  - entity: sensor.goecharger_111111_charger_temp
-  - entity: sensor.goecharger_111111_current_session_charged_energy
-  - entity: sensor.goecharger_111111_current_session_charged_energy_corrected
-  - entity: sensor.goecharger_111111_p_all
-  - entity: sensor.goecharger_111111_p_l1
-  - entity: sensor.goecharger_111111_p_l2
-  - entity: sensor.goecharger_111111_p_l3
-  - entity: sensor.goecharger_111111_u_l1
-  - entity: sensor.goecharger_111111_u_l2
-  - entity: sensor.goecharger_111111_u_l3
-  - entity: sensor.goecharger_111111_i_l1
-  - entity: sensor.goecharger_111111_i_l2
-  - entity: sensor.goecharger_111111_i_l3
-  - entity: sensor.goecharger_111111_energy_total
-  - entity: sensor.goecharger_111111_energy_total_corrected
-show_header_toggle: false
-title: EV Charger (go-eCharger)
 type: entities
+title: go-eCharger
+show_header_toggle: false
+entities:
+  - entity: switch.goecharger_mycharger_allow_charging
+  - entity: number.goecharger_mycharger_charge_limit
+  - entity: select.goecharger_mycharger_max_current
+  - entity: sensor.goecharger_mycharger_car_status
+  - entity: sensor.goecharger_mycharger_charger_temp
+  - entity: sensor.goecharger_mycharger_current_session_charged_energy
+  - entity: sensor.goecharger_mycharger_p_all
 ```
+
+## Services
+
+The integration also provides services under the `goecharger` domain:
+
+- `set_max_current`
+- `set_temporary_max_current`
+- `set_absolute_max_current`
+- `set_charge_limit`
+- `set_cable_lock_mode`
+
+Each service accepts an optional `charger_name`. If omitted, the command is sent to all configured chargers. The native charge-control entities are the recommended way to change the regular charge limit and maximum current.
+
+## Notes
+
+- MQTT must be enabled on the charger and configured to publish to the broker used by Home Assistant.
+- The integration uses local MQTT push updates and does not poll the charger over HTTP.
+- Existing sensor and switch entities and the service interface are retained.
