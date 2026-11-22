@@ -6,7 +6,7 @@ A Home Assistant custom integration for monitoring and controlling go-eCharger d
 
 - Charger status and electrical measurements as Home Assistant sensors
 - Switch to allow or block charging
-- Native number entity for the charge limit (kWh, 0.1 kWh steps)
+- Native number entity for the charge limit (0–20 kWh, 0.5 kWh steps)
 - Native select entity for maximum charging current: **6, 8, 10, 12, 14 or 16 A**
 - Existing services for setting the temporary current, absolute maximum current and cable lock mode
 - MQTT push updates; entities synchronize automatically with the charger's reported status
@@ -14,13 +14,18 @@ A Home Assistant custom integration for monitoring and controlling go-eCharger d
 
 ## Installation
 
-### HACS
+### Home Assistant Marketplace
 
-1. Add this repository as a custom repository in HACS (Integration).
-2. Install **go-eCharger**.
-3. Restart Home Assistant.
-4. Make sure the **MQTT** integration is configured and connected to the broker used by the charger.
-5. Add the integration under **Settings → Devices & Services → Add Integration → go-eCharger**.
+On Home Assistant 2026.11 and newer, the community store is built in as the **Marketplace**.
+
+1. Open **Settings → Marketplace**.
+2. Select **Add from link**.
+3. Enter this repository URL: `https://github.com/flecke-m/homeassistant-goecharger`.
+4. Add and install **go-eCharger** from the repository page.
+5. Make sure the **MQTT** integration is configured and connected to the broker used by the charger.
+6. Add the integration under **Settings → Devices & Services → Add Integration → go-eCharger**.
+
+The Marketplace uses the repository's `hacs.json` metadata file; its filename remains unchanged. On Home Assistant versions before 2026.11, install the integration through HACS as a custom repository (Integration).
 
 ### Manual installation
 
@@ -64,7 +69,7 @@ The integration creates the following entities for each configured charger:
 
 | Entity | Type | Description |
 | --- | --- | --- |
-| `number.goecharger_{name}_charge_limit` | Number | Charge limit in kWh, in 0.1 kWh increments (0 disables the limit) |
+| `number.goecharger_{name}_charge_limit` | Number | Charge limit in kWh, in 0.5 kWh increments from 0 to 20 (0 disables the limit) |
 | `select.goecharger_{name}_max_current` | Select | Maximum current: 6, 8, 10, 12, 14 or 16 A |
 | `sensor.goecharger_{name}_charge_limit` | Sensor | Read-only measurement of the charge limit reported by the charger |
 | `switch.goecharger_{name}_allow_charging` | Switch | Allow or block charging |
